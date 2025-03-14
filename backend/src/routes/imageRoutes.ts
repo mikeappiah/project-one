@@ -1,10 +1,14 @@
 import express from 'express';
-import { uploadImage, getImages } from '../controllers/imageController.js';
+import {
+	uploadImage,
+	getImages,
+	deleteImage
+} from '../controllers/imageController.js';
 import uploadMiddleware from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
 
-router.get('/', getImages);
-router.post('/upload', uploadMiddleware, uploadImage);
+router.route('/').get(getImages).post(uploadMiddleware, uploadImage);
 
+router.delete('/:key', deleteImage);
 export default router;

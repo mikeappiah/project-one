@@ -7,7 +7,8 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	Loader2,
-	X
+	X,
+	Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,6 +38,9 @@ export default function Home() {
 	const [uploadingFile, setUploadingFile] = useState(false);
 	const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 	const [notifications, setNotifications] = useState<Notification[]>([]);
+	const [deletingImages, setDeletingImages] = useState<Record<string, boolean>>(
+		{}
+	);
 
 	useEffect(() => {
 		const fetchImages = async () => {
@@ -103,6 +107,34 @@ export default function Home() {
 			event.target.value = '';
 		}
 	}
+
+	const handleDeleteImage = async (image: Image) => {
+		if (!image.name) return;
+
+		// Mark this image as being deleted
+		setDeletingImages((prev) => ({
+			...prev,
+			[image.id]: true
+		}));
+
+		try {
+			await axios.delete(`http://localhost:3000/api/images/${image.name}`);
+
+			// Remove the image from the state
+			setImages((prev) => prev.filter((img) => img.id !== image.id));
+
+			showNotification(`Successfully deleted ${image.name}`, 'success');
+		} catch (error) {
+			console.log('Error deleting image:', error);
+			showNotification('Failed to delete image', 'error');
+		} finally {
+			// Clear the deleting state
+			setDeletingImages((prev) => ({
+				...prev,
+				[image.id]: false
+			}));
+		}
+	};
 
 	const imagesPerPage = 12;
 
@@ -264,9 +296,25 @@ export default function Home() {
 										/>
 									</div>
 									<CardContent className='p-3'>
-										<h2 className='truncate font-medium text-lg'>
-											{image.name}
-										</h2>
+										<div className='flex justify-between items-start'>
+											<h2 className='truncate font-medium pr-2'>
+												{image.name}
+											</h2>
+											<Button
+												variant='secondary'
+												size='sm'
+												className='rounded-none h-8 w-8 p-0'
+												onClick={() => handleDeleteImage(image)}
+												disabled={deletingImages[image.id]}
+											>
+												{deletingImages[image.id] ? (
+													<Loader2 className='h-4 w-4 animate-spin' />
+												) : (
+													<Trash2 className='h-4 w-4' />
+												)}
+												<span className='sr-only'>Delete</span>
+											</Button>
+										</div>
 										<div className='text-sm text-muted-foreground mt-3'>
 											{new Date(image.lastModified).toLocaleDateString()}
 										</div>
@@ -302,9 +350,22 @@ export default function Home() {
 											{new Date(image.lastModified).toLocaleDateString()}
 										</div>
 									</div>
-									<div className='text-sm text-muted-foreground'>
+									<div className='text-sm text-muted-foreground mr-4'>
 										{(image.size / 1000).toFixed(1)} KB
 									</div>
+									<Button
+										variant='secondary'
+										size='sm'
+										className='rounded-none'
+										onClick={() => handleDeleteImage(image)}
+										disabled={deletingImages[image.id]}
+									>
+										{deletingImages[image.id] ? (
+											<Loader2 className='h-4 w-4 animate-spin' />
+										) : (
+											<Trash2 className='h-4 w-4' />
+										)}
+									</Button>
 								</div>
 							))}
 						</div>

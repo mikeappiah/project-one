@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import {
+	PutObjectCommand,
+	ListObjectsV2Command,
+	DeleteObjectCommand
+} from '@aws-sdk/client-s3';
 import s3Client from '../config/s3Config.js';
 
 export const uploadImage = async (
@@ -91,5 +95,38 @@ export const getImages = async (
 		res
 			.status(500)
 			.json({ status: 'fail', error: 'Failed to fetch S3 objects' });
+	}
+};
+
+export const deleteImage = async (
+	req: Request,
+	res: Response,
+	_next: NextFunction
+): Promise<void> => {
+	try {
+		const { key } = req.params;
+
+		if (!key) {
+			res.status(400).json({ error: 'Image key is required' });
+			return;
+		}
+
+		const command = new DeleteObjectCommand({
+			Bucket: process.env.AWS_S3_BUCKET_NAME!,
+			Key: key
+		});
+
+		await s3Client.send(command);
+
+		res.status(200).json({
+			status: 'success',
+			message: `Image ${key} deleted successfully`
+		});
+	} catch (error) {
+		console.error('Error deleting image:', error);
+		res.status(500).json({
+			status: 'fail',
+			error: 'Failed to delete image'
+		});
 	}
 };
