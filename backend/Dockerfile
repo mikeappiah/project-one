@@ -8,6 +8,8 @@ RUN npm install
 
 COPY . .
 
+RUN npm run build
+
 ARG PORT=3000
 
 ENV PORT=$PORT
