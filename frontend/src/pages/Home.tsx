@@ -42,11 +42,13 @@ export default function Home() {
 		{}
 	);
 
+	const API_URL = import.meta.env.VITE_API_URL;
+
 	useEffect(() => {
 		const fetchImages = async () => {
 			setLoading(true);
 			try {
-				const res = await axios.get('http://localhost:3000/api/images');
+				const res = await axios.get(`${API_URL}/api/images`);
 				const data = res.data.data;
 				setImages(data);
 				showNotification('Images fetched successfully', 'success');
@@ -88,13 +90,13 @@ export default function Home() {
 		setUploadingFile(true);
 
 		try {
-			await axios.post('http://localhost:3000/api/images/upload', formData, {
+			await axios.post(`${API_URL}/api/images`, formData, {
 				headers: {
 					'Content-Type': 'multipart/form-data'
 				}
 			});
 
-			const res = await axios.get('http://localhost:3000/api/images');
+			const res = await axios.get(`${API_URL}/api/images`);
 			const data = res.data.data;
 			setImages(data);
 
@@ -111,16 +113,14 @@ export default function Home() {
 	const handleDeleteImage = async (image: Image) => {
 		if (!image.name) return;
 
-		// Mark this image as being deleted
 		setDeletingImages((prev) => ({
 			...prev,
 			[image.id]: true
 		}));
 
 		try {
-			await axios.delete(`http://localhost:3000/api/images/${image.name}`);
+			await axios.delete(`${API_URL}/api/images/${image.name}`);
 
-			// Remove the image from the state
 			setImages((prev) => prev.filter((img) => img.id !== image.id));
 
 			showNotification(`Successfully deleted ${image.name}`, 'success');
@@ -128,7 +128,6 @@ export default function Home() {
 			console.log('Error deleting image:', error);
 			showNotification('Failed to delete image', 'error');
 		} finally {
-			// Clear the deleting state
 			setDeletingImages((prev) => ({
 				...prev,
 				[image.id]: false
