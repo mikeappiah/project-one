@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: 'Project I',
+	title: 'Next App',
 	description: 'Dashboard to display and delete Amazon S3 images'
 };
 
