@@ -1,4 +1,4 @@
-name: Build and Push to ECR
+name: Build and Push to Private ECR and Deploy to ECS
 
 on:
   push:
@@ -19,17 +19,44 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR Public
-        id: login-ecr-public
+      - name: Login to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-        with:
-          registry-type: public
+        # No need for "registry-type: public" since we're using private ECR now
 
-      - name: Build, tag, and push image to Amazon ECR Public
+      - name: Build, tag, and push image to Amazon ECR
         env:
-          ECR_REGISTRY: public.ecr.aws/v4n7w1i7
+          ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           ECR_REPOSITORY: project-one
           IMAGE_TAG: next-app
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # - name: Generate task definition
+      #   run: |
+      #     aws ecs describe-task-definition --task-definition next-app-task --region ${{ secrets.AWS_REGION }} > task-definition.json
+      #     jq '.taskDefinition | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' task-definition.json > temp.json
+      #     mv temp.json task-definition.json
+
+      # - name: Update task definition with new image
+      #   run: |
+      #     jq --arg image "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" '.containerDefinitions[0].image = $image' task-definition.json > updated-task-definition.json
+
+      # - name: Register new task definition
+      #   run: |
+      #     NEW_TASK_DEF=$(aws ecs register-task-definition --cli-input-json file://updated-task-definition.json --region ${{ secrets.AWS_REGION }} --query 'taskDefinition.taskDefinitionArn' --output text)
+      #     echo "New Task Definition ARN: $NEW_TASK_DEF"
+      #     echo "TASK_DEF_ARN=$NEW_TASK_DEF" >> $GITHUB_ENV
+
+      # - name: Update appspec.yaml with new task definition
+      #   run: |
+      #     sed "s|<TASK_DEFINITION_ARN>|${{ env.TASK_DEF_ARN }}|" appspec.yaml > appspec-updated.yaml
+
+      # - name: Upload appspec.yaml to S3
+      #   run: |
+      #     aws s3 cp appspec-updated.yaml s3://next-app-artifacts/appspec.yaml --region ${{ secrets.AWS_REGION }}
+
+      # - name: Trigger CodePipeline
+      #   run: |
+      #     aws codepipeline start-pipeline-execution --name next-app-pipeline --region ${{ secrets.AWS_REGION }}
