@@ -61,5 +61,5 @@ jobs:
           aws deploy create-deployment \
             --application-name AppECS-next-app-cluster-next-app-service \
             --deployment-group-name DgpECS-next-app-cluster-next-app-service \
-            --revision revisionType=S3, s3Location={bucket=project-one-appspec-bucket,key=appspec.yaml,bundleType=YAML} \
+            --revision 'revisionType=S3,s3Location={bucket="project-one-appspec-bucket",key="appspec.yaml",bundleType="YAML"}' \
             --region ${{ secrets.AWS_REGION }}
